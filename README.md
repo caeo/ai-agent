@@ -8,13 +8,14 @@ Projeto de criação de um agente de inteligência artifical customizável.
 
 - Python
 - FastAPI
+- Pydantic
 - Uvicorn
 - git
 
 ## Como executar
 
 1. git clone https://github.com/caeo/ai-agent.git
-2. cd ai_agent/
+2. cd ai-agent/
 3. Criar o ambiente virtual - python -m venv .venv
 4. Ativar o ambiente virtual - ./.venv/Scripts/Activate.ps1
 5. Para instalar as dependências - pip install -r requirements.txt

@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from app.schemas.requirement import GeneratedDocument
+
 
 class DocumentRequest(BaseModel):
     title: str
@@ -7,6 +9,5 @@ class DocumentRequest(BaseModel):
 
 class DocumentResponse(BaseModel):
     title: str
-    context: str
+    content: GeneratedDocument
     status: str
-    

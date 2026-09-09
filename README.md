@@ -11,6 +11,7 @@ Projeto de criação de um agente de inteligência artifical customizável.
 - Pydantic
 - Uvicorn
 - git
+- python-docx
 
 ## Como executar
 

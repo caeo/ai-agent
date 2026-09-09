@@ -2,6 +2,7 @@ from app.schemas.document import DocumentRequest, DocumentResponse
 from app.services.ai_service import AIService
 from app.schemas.requirement import GeneratedDocument
 from app.services.document_renderer import DocumentRenderer
+from app.services.docx_renderer import DocxRenderer
 import json
 
 
@@ -94,6 +95,10 @@ class DocumentService:
         renderer = DocumentRenderer()
         rendered_document = renderer.generate_text(document.title, generated_document)
         print(rendered_document)
+        print(type(generated_document))
+
+        docx_renderer = DocxRenderer()
+        docx_renderer.generate(document.title, generated_document)
 
         document_created = DocumentResponse(
             title=document.title, content=generated_document, status="generated"

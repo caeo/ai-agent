@@ -9,3 +9,4 @@ class Requirement(BaseModel):
 class GeneratedDocument(BaseModel):
     functional_requirements: list[Requirement]
     non_functional_requirements: list[Requirement]
+    technical_restrictions: list[Requirement]

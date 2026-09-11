@@ -1,8 +1,8 @@
 from app.schemas.document import DocumentRequest, DocumentResponse
 from app.services.ai_service import AIService
 from app.schemas.requirement import GeneratedDocument
-from app.services.document_renderer import DocumentRenderer
-from app.services.docx_renderer import DocxRenderer
+from app.renderers.document_renderer import DocumentRenderer
+from app.renderers.docx_renderer import DocxRenderer
 import json
 
 
@@ -98,10 +98,14 @@ class DocumentService:
         print(type(generated_document))
 
         docx_renderer = DocxRenderer()
-        docx_renderer.generate(document.title, generated_document)
+        document_id, file_path = docx_renderer.generate(
+            document.title, generated_document
+        )
+
+        print("document_id: ", document_id, "\nfile_path: ", file_path)
 
         document_created = DocumentResponse(
-            title=document.title, content=generated_document, status="generated"
+            id=document_id, title=document.title, content=generated_document, status="generated", download_url= f"/documents/{document_id}/download"
         )
 
         print(generated_document)

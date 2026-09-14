@@ -16,8 +16,8 @@ class DocxRenderer:
         return safe_name
 
     def generate(
-        self, title: str, generated_document: GeneratedDocument
-    ) -> tuple[str, Path]:
+        self, title: str, document_id: uuid.UUID, generated_document: GeneratedDocument
+    ) -> Path:
 
         docx = Document()
 
@@ -44,11 +44,9 @@ class DocxRenderer:
         output_dir = Path("generated_documents")
         output_dir.mkdir(exist_ok=True)
 
-        identifier_uuid = uuid.uuid4().hex[:8]
-
         filename = self.clear_title(title)
-        file_path = output_dir / f"{filename}_{identifier_uuid}.docx"
+        file_path = output_dir / f"{filename}_{document_id}.docx"
 
         docx.save(file_path)
 
-        return identifier_uuid, file_path
+        return file_path

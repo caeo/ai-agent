@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel
 from app.schemas.requirement import GeneratedDocument
 
@@ -8,7 +9,7 @@ class DocumentRequest(BaseModel):
 
 
 class DocumentResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     title: str
     content: GeneratedDocument
     status: str

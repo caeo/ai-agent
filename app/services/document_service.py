@@ -1,12 +1,12 @@
 import json
 import uuid
 
+
 from app.services.ai_service import AIService
 
 from app.schemas.document import DocumentRequest, DocumentResponse
 from app.schemas.requirement import GeneratedDocument
 
-from app.renderers.document_renderer import DocumentRenderer
 from app.renderers.docx_renderer import DocxRenderer
 
 from app.prompts.requirements_prompt import requirements_prompt
@@ -21,7 +21,7 @@ class DocumentService:
     def __init__(self, repository: DocumentRepository):
         self.repository = repository
 
-    def get_by_id(self, document_id: uuid.UUID) -> Document | None:
+    def get_by_id(self, document_id: uuid.UUID) -> DocumentResponse | None:
 
         db_document = self.repository.get_by_id(document_id)
 
@@ -38,6 +38,9 @@ class DocumentService:
             download_url=f"/documents/{db_document.id}/download",
         )
 
+    def get_document_by_id(self, document_id: uuid.UUID) -> Document | None:
+        return self.repository.get_by_id(document_id)
+
     def create(self, request: DocumentRequest) -> DocumentResponse:
 
         document_id = uuid.uuid4()
@@ -48,17 +51,12 @@ class DocumentService:
         generated_data = json.loads(generated_response)
         generated_document = GeneratedDocument(**generated_data)
 
-        renderer = DocumentRenderer()
-        rendered_document = renderer.generate_text(request.title, generated_document)
-        print(rendered_document)
-        print(type(generated_document))
 
         docx_renderer = DocxRenderer()
         file_path = docx_renderer.generate(
             request.title, document_id, generated_document
         )
 
-        print("document_id: ", document_id, "\nfile_path: ", file_path)
 
         db_document = Document(
             id=document_id,

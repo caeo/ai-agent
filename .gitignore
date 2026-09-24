@@ -2,3 +2,5 @@
 __pycache__/
 .venv/
 generated_documents/
+test_ingestion.py
+test_semantic_search.py

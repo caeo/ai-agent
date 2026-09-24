@@ -87,3 +87,10 @@ A aplicação utiliza uma arquitetura em camadas:
 - [ ] Expandir testes automatizados
 - [ ] Melhorar tratamento de erros
 - [ ] Adicionar geração de PDF
+
+
+## Escolhas
+
+### PGVECTOR
+
+- O pgvector foi escolhido por ser uma extensão do PostgreSQL, que já está sendo utilizado. Ele permite armazenar vectors e permite fazer buscas por similaridade, que é justamente o que RAG(Retrieval-Augmented Generation) faz.

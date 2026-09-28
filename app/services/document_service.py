@@ -3,6 +3,7 @@ import uuid
 
 
 from app.services.ai_service import AIService
+from app.services.retrieval_service import RetrievalService
 
 from app.schemas.document import DocumentRequest, DocumentResponse
 from app.schemas.requirement import GeneratedDocument
@@ -18,8 +19,17 @@ from app.db.models.document import Document
 
 class DocumentService:
 
-    def __init__(self, repository: DocumentRepository):
+    def __init__(
+        self,
+        repository: DocumentRepository,
+        ai_service: AIService,
+        docx_renderer: DocxRenderer,
+        retrieval_service: RetrievalService,
+    ):
         self.repository = repository
+        self.ai_service = ai_service
+        self.docx_renderer = docx_renderer
+        self.retrieval_service = retrieval_service
 
     def get_by_id(self, document_id: uuid.UUID) -> DocumentResponse | None:
 
@@ -45,18 +55,17 @@ class DocumentService:
 
         document_id = uuid.uuid4()
 
-        ai_service = AIService()
+        retrieved_context = self.retrieval_service.retrieve_context(request.context)
 
-        generated_response = ai_service.generate(requirements_prompt(request.context))
+        prompt = requirements_prompt(request.context, retrieved_context)
+
+        generated_response = self.ai_service.generate(prompt)
         generated_data = json.loads(generated_response)
         generated_document = GeneratedDocument(**generated_data)
 
-
-        docx_renderer = DocxRenderer()
-        file_path = docx_renderer.generate(
+        file_path = self.docx_renderer.generate(
             request.title, document_id, generated_document
         )
-
 
         db_document = Document(
             id=document_id,

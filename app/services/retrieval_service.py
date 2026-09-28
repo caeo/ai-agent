@@ -19,3 +19,12 @@ class RetrievalService:
         chunks = self.chunk_repository.semantic_search(embedded_query, limit)
 
         return chunks
+
+    def retrieve_context(self, query: str, limit: int = 3) -> str:
+        chunks = self.search(query, limit)
+
+        chunk_contents = [chunk.content for chunk in chunks]
+
+        content = "\n\n".join(chunk_contents)
+
+        return content

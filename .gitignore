@@ -4,3 +4,4 @@ __pycache__/
 generated_documents/
 test_ingestion.py
 test_semantic_search.py
+uploads/

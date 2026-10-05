@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from app.schemas.document import DocumentRequest, DocumentResponse
-from app.services.document_service import DocumentService
 from app.api.routes.document import router as document_router
+from app.api.routes.source_document import router as source_document_router
 
 app = FastAPI()
 
@@ -12,3 +11,4 @@ def health():
 
 
 app.include_router(document_router)
+app.include_router(source_document_router)

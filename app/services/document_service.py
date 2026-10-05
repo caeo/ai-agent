@@ -57,9 +57,16 @@ class DocumentService:
 
         retrieved_context = self.retrieval_service.retrieve_context(request.context)
 
+        # print("===== CONTEXTO RECUPERADO PELO RAG =====")
+        # print(retrieved_context)
+        # print("========================================")
+
         prompt = requirements_prompt(request.context, retrieved_context)
 
         generated_response = self.ai_service.generate(prompt)
+        print("===== RESPOSTA BRUTA DO LLM =====")
+        print(repr(generated_response))
+        print("=================================")
         generated_data = json.loads(generated_response)
         generated_document = GeneratedDocument(**generated_data)
 

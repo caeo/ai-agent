@@ -36,9 +36,3 @@ class DocxTextExtractor:
         information_content = "\n\n".join(information)
 
         return information_content
-
-
-teste = DocxTextExtractor()
-
-
-print(teste.extract("uploads\\9fe82f43-3b6f-4d47-b9c3-a93ba86c4070.docx"))

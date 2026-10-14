@@ -1,4 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
+
+from app.core.enums import SourceType
 
 from app.db.session import get_db
 
@@ -36,6 +38,7 @@ def get_source_document_service(db: Session = Depends(get_db)) -> SourceDocument
 @router.post("/source-documents")
 async def upload(
     file: UploadFile = File(...),
+    source_type: SourceType = Form(SourceType.KNOWLEDGE),
     source_document_service: SourceDocumentService = Depends(
         get_source_document_service
     ),
@@ -71,7 +74,7 @@ async def upload(
         )
 
     source_document_request = SourceDocumentRequest(
-        file_path=str(file_path), filename=str(file.filename)
+        file_path=str(file_path), filename=str(file.filename), source_type=source_type
     )
 
     source_document_response = source_document_service.ingest(

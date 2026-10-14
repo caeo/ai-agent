@@ -36,6 +36,7 @@ class SourceDocumentService:
             id=source_document_created.id,
             filename=source_document_created.filename,
             file_path=source_document_created.file_path,
+            source_type=source_document_created.source_type,
         )
 
         return response
@@ -45,6 +46,7 @@ class SourceDocumentService:
         source_document = SourceDocument(
             filename=request.filename,
             file_path=request.file_path,
+            source_type=request.source_type.value,
         )
 
         source_document_created = self.source_document_repository.create(

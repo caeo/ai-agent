@@ -64,9 +64,9 @@ class DocumentService:
         prompt = requirements_prompt(request.context, retrieved_context)
 
         generated_response = self.ai_service.generate(prompt)
-        print("===== RESPOSTA BRUTA DO LLM =====")
-        print(repr(generated_response))
-        print("=================================")
+        # print("===== RESPOSTA BRUTA DO LLM =====")
+        # print(repr(generated_response))
+        # print("=================================")
         generated_data = json.loads(generated_response)
         generated_document = GeneratedDocument(**generated_data)
 

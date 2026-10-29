@@ -1,14 +1,18 @@
 import json
 import uuid
 
+from datetime import datetime
+
+from pathlib import Path
 
 from app.services.ai_service import AIService
 from app.services.retrieval_service import RetrievalService
 
 from app.schemas.document import DocumentRequest, DocumentResponse
-from app.schemas.requirement import GeneratedDocument
+from app.schemas.requirement import GeneratedDocument, DocumentIdentification
 
 from app.renderers.docx_renderer import DocxRenderer
+from app.renderers.template_docx_renderer import TemplateDocxRenderer
 
 from app.prompts.requirements_prompt import requirements_prompt
 
@@ -25,11 +29,15 @@ class DocumentService:
         ai_service: AIService,
         docx_renderer: DocxRenderer,
         retrieval_service: RetrievalService,
+        template_docx_renderer: TemplateDocxRenderer,
+        active_template_path: Path | None = None,
     ):
         self.repository = repository
         self.ai_service = ai_service
         self.docx_renderer = docx_renderer
         self.retrieval_service = retrieval_service
+        self.template_docx_renderer = template_docx_renderer
+        self.active_template_path = active_template_path
 
     def get_by_id(self, document_id: uuid.UUID) -> DocumentResponse | None:
 
@@ -57,22 +65,43 @@ class DocumentService:
 
         retrieved_context = self.retrieval_service.retrieve_context(request.context)
 
-        # print("===== CONTEXTO RECUPERADO PELO RAG =====")
-        # print(retrieved_context)
-        # print("========================================")
+        print("===== CONTEXTO RECUPERADO PELO RAG =====")
+        print(retrieved_context)
+        print("========================================")
 
+        # prompt = requirements_prompt(request.context)
         prompt = requirements_prompt(request.context, retrieved_context)
 
         generated_response = self.ai_service.generate(prompt)
-        # print("===== RESPOSTA BRUTA DO LLM =====")
-        # print(repr(generated_response))
-        # print("=================================")
+        print("===== RESPOSTA BRUTA DO LLM =====")
+        print(repr(generated_response))
+        print("=================================")
         generated_data = json.loads(generated_response)
         generated_document = GeneratedDocument(**generated_data)
 
-        file_path = self.docx_renderer.generate(
-            request.title, document_id, generated_document
+        generated_document.identification = DocumentIdentification(
+            version="1.0",
+            responsible=None,
+            date=datetime.now().strftime("%d/%m/%Y"),
+            status="Em elaboração",
         )
+
+        # Decide se vai usar um template
+        if self.active_template_path is not None:
+            file_path = self.template_docx_renderer.generate(
+                template_path=self.active_template_path,
+                title=request.title,
+                document_id=document_id,
+                generated_document=generated_document,
+            )
+
+        else:
+
+            file_path = self.docx_renderer.generate(
+                request.title,
+                document_id=document_id,
+                generated_document=generated_document,
+            )
 
         db_document = Document(
             id=document_id,

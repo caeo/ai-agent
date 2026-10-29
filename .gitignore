@@ -6,3 +6,4 @@ test_ingestion.py
 test_semantic_search.py
 uploads/
 debug_retrieval.py
+debug_template.py

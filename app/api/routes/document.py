@@ -20,6 +20,7 @@ from app.services.retrieval_service import RetrievalService
 from app.services.ai_service import AIService
 
 from app.renderers.docx_renderer import DocxRenderer
+from app.renderers.template_docx_renderer import TemplateDocxRenderer
 
 router = APIRouter()
 
@@ -34,9 +35,18 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
     ai_service = AIService()
 
     docx_renderer = DocxRenderer()
+    template_docx_renderer = TemplateDocxRenderer()
 
     document_service = DocumentService(
-        document_repository, ai_service, docx_renderer, retrieval_service
+        document_repository,
+        ai_service,
+        docx_renderer,
+        retrieval_service,
+        template_docx_renderer,
+        active_template_path=Path(
+            r"C:\Users\silva.csc\Desktop\ai-agent\uploads\d933350f-dca6-4d8e-b635-1c32929dc463.docx"
+        ),
+        # active_template_path=None,
     )
 
     return document_service
@@ -77,7 +87,7 @@ def download_document(
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Caso em que o arquivo existe, mas o documento desapareceu
+    # O registro existe no banco, mas o arquivo não foi encontrado.
     if not Path(document.file_path).exists():
         raise HTTPException(status_code=404, detail="Document file not found")
 

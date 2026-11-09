@@ -63,16 +63,21 @@ class DocumentService:
 
         document_id = uuid.uuid4()
 
-        retrieved_context = self.retrieval_service.retrieve_context(request.context)
+        retrieved_context = self.retrieval_service.retrieve_generation_context(
+            request.context
+        )
+        print("Contexto recuperado:", retrieved_context, flush=True)
 
-        print("===== CONTEXTO RECUPERADO PELO RAG =====")
-        print(retrieved_context)
-        print("========================================")
+        # print("===== CONTEXTO RECUPERADO PELO RAG =====")
+        # print(retrieved_context)
+        # print("========================================")
 
         # prompt = requirements_prompt(request.context)
         prompt = requirements_prompt(request.context, retrieved_context)
 
+        print("Chamando o Ollama...", flush=True)
         generated_response = self.ai_service.generate(prompt)
+        print("O Ollama respondeu.", flush=True)
         print("===== RESPOSTA BRUTA DO LLM =====")
         print(repr(generated_response))
         print("=================================")

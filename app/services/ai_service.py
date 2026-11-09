@@ -1,8 +1,17 @@
+import hashlib
+
 import httpx
 
 
 class AIService:
     def generate(self, prompt: str) -> str:
+
+        # print("===== PROMPT ENVIADO =====")
+        # print(prompt, flush=True)
+        # print("=========================")
+
+        # prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+        # print("Hash do prompt:", prompt_hash, flush=True)
 
         response = httpx.post(
             "http://localhost:11434/api/generate",
@@ -10,7 +19,8 @@ class AIService:
                 "model": "qwen3:1.7b",
                 "prompt": prompt,
                 "stream": False,
-                "options": {"num_ctx": 8192},
+                # temperature controla a variação na escolha do próximo token
+                "options": {"num_ctx": 8192, "temperature": 0},
             },
             timeout=300,
         )

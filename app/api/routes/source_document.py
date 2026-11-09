@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 
-from app.core.enums import SourceType
+from app.core.enums import SourceType, KnowledgeRole
 
 from app.db.session import get_db
 
@@ -39,6 +39,8 @@ def get_source_document_service(db: Session = Depends(get_db)) -> SourceDocument
 async def upload(
     file: UploadFile = File(...),
     source_type: SourceType = Form(SourceType.KNOWLEDGE),
+    knowledge_role: KnowledgeRole | None = Form(None),
+    applicability: str | None = Form(None, max_length=1000),
     source_document_service: SourceDocumentService = Depends(
         get_source_document_service
     ),
@@ -48,6 +50,31 @@ async def upload(
     docx_text_extractor = DocxTextExtractor()
 
     content = await file.read()
+
+    # Se applicability não for None, ele retira os espaços
+    applicability = (
+        applicability.strip()
+        if applicability is not None
+        else None
+    )
+
+    # checka se o knowledge_role é None
+    if source_type == SourceType.KNOWLEDGE:
+        if knowledge_role is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Informe o papel do documento de conhecimento."
+            )
+
+        if not applicability:
+            raise HTTPException(status_code=422, detail="Informe em quais situações o conhecimento se aplica.")
+
+    # Checka se knowledge_role não é nada e se tem applicability, porque um template não deve ter metadados de conhecimento.
+    elif knowledge_role is not None or applicability:
+        raise HTTPException(
+            status_code=422,
+            detail="Templates não devem receber metadados de conhecimento."
+        )
 
     # arquivo vazio
     if not content:
@@ -74,7 +101,7 @@ async def upload(
         )
 
     source_document_request = SourceDocumentRequest(
-        file_path=str(file_path), filename=str(file.filename), source_type=source_type
+        file_path=str(file_path), filename=str(file.filename), source_type=source_type, knowledge_role=knowledge_role, applicability=applicability
     )
 
     source_document_response = source_document_service.ingest(

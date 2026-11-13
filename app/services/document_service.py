@@ -10,7 +10,7 @@ from app.services.retrieval_service import RetrievalService
 
 # from app.services.knowledge_selection_service import KnowledgeSelectionService
 
-from app.schemas.document import DocumentRequest, DocumentResponse
+from app.schemas.document import DocumentRequest, DocumentResponse, DocumentListItem
 from app.schemas.requirement import GeneratedDocument, DocumentIdentification
 
 from app.renderers.docx_renderer import DocxRenderer
@@ -62,6 +62,22 @@ class DocumentService:
 
     def get_document_by_id(self, document_id: uuid.UUID) -> Document | None:
         return self.repository.get_by_id(document_id)
+
+    def list_all(self) -> list[DocumentListItem]:
+        db_documents = self.repository.list_all()
+
+        documents = []
+
+        for document in db_documents:
+            document_item = DocumentListItem(
+                id=document.id,
+                title=document.title,
+                status=document.status,
+                download_url=f"/documents/{document.id}/download",
+            )
+            documents.append(document_item)
+
+        return documents
 
     def create(self, request: DocumentRequest) -> DocumentResponse:
 

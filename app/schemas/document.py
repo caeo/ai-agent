@@ -14,3 +14,10 @@ class DocumentResponse(BaseModel):
     content: GeneratedDocument
     status: str
     download_url: str
+
+
+class DocumentListItem(BaseModel):
+    id: uuid.UUID
+    title: str
+    status: str
+    download_url: str

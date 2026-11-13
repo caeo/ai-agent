@@ -12,7 +12,7 @@ from app.db.session import get_db
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.chunk_repository import ChunkRepository
 
-from app.schemas.document import DocumentRequest, DocumentResponse
+from app.schemas.document import DocumentRequest, DocumentResponse, DocumentListItem
 
 from app.services.ai_service import AIService
 from app.services.document_service import DocumentService
@@ -90,6 +90,16 @@ def get_by_id(
         raise HTTPException(status_code=404, detail="Document not found")
 
     return document
+
+
+@router.get("/documents", response_model=list[DocumentListItem])
+def list_documents(
+    service: DocumentService = Depends(get_document_service),
+) -> list[DocumentListItem]:
+
+    documents = service.list_all()
+
+    return documents
 
 
 @router.get("/documents/{document_id}/download")

@@ -7,3 +7,4 @@ test_semantic_search.py
 uploads/
 debug_retrieval.py
 debug_template.py
+experiments/

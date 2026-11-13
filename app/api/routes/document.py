@@ -14,13 +14,18 @@ from app.repositories.chunk_repository import ChunkRepository
 
 from app.schemas.document import DocumentRequest, DocumentResponse
 
+from app.services.ai_service import AIService
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
 from app.services.retrieval_service import RetrievalService
-from app.services.ai_service import AIService
+
+# from app.services.knowledge_selection_service import KnowledgeSelectionService
 
 from app.renderers.docx_renderer import DocxRenderer
 from app.renderers.template_docx_renderer import TemplateDocxRenderer
+
+from app.core.exceptions import AIServiceUnavailableError
+from app.core.config import ACTIVE_TEMPLATE_PATH
 
 router = APIRouter()
 
@@ -30,23 +35,25 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
     document_repository = DocumentRepository(db)
     chunk_repository = ChunkRepository(db)
 
+    ai_service = AIService()
     embedding_service = EmbeddingService()
     retrieval_service = RetrievalService(chunk_repository, embedding_service)
-    ai_service = AIService()
 
     docx_renderer = DocxRenderer()
     template_docx_renderer = TemplateDocxRenderer()
 
+    # knowledge_selection_service = KnowledgeSelectionService(ai_service)
+
     document_service = DocumentService(
-        document_repository,
-        ai_service,
-        docx_renderer,
-        retrieval_service,
-        template_docx_renderer,
-        active_template_path=Path(
-            r"C:\Users\silva.csc\Desktop\ai-agent\uploads\d933350f-dca6-4d8e-b635-1c32929dc463.docx"
+        repository=document_repository,
+        ai_service=ai_service,
+        docx_renderer=docx_renderer,
+        retrieval_service=retrieval_service,
+        template_docx_renderer=template_docx_renderer,
+        # knowledge_selection_service=knowledge_selection_service,
+        active_template_path=(
+            Path(ACTIVE_TEMPLATE_PATH) if ACTIVE_TEMPLATE_PATH else None
         ),
-        # active_template_path=None,
     )
 
     return document_service
@@ -57,7 +64,16 @@ def create_document(
     request: DocumentRequest, service: DocumentService = Depends(get_document_service)
 ) -> DocumentResponse:
 
-    document = service.create(request)
+    try:
+
+        document = service.create(request)
+
+    except AIServiceUnavailableError as error:
+
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+        ) from error
 
     return document
 

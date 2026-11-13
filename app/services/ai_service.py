@@ -1,29 +1,36 @@
-import hashlib
-
 import httpx
+
+from app.core.exceptions import AIServiceUnavailableError
 
 
 class AIService:
     def generate(self, prompt: str) -> str:
+        context_window = 4096
 
         # print("===== PROMPT ENVIADO =====")
         # print(prompt, flush=True)
         # print("=========================")
 
-        # prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-        # print("Hash do prompt:", prompt_hash, flush=True)
+        try:
+            response = httpx.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "qwen3:4b-instruct",
+                    "prompt": prompt,
+                    "stream": False,
+                    "format": "json",
+                    # temperature controla a variação na escolha do próximo token
+                    "options": {"num_ctx": context_window, "temperature": 0},
+                },
+                timeout=300,
+            )
 
-        response = httpx.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "qwen3:1.7b",
-                "prompt": prompt,
-                "stream": False,
-                # temperature controla a variação na escolha do próximo token
-                "options": {"num_ctx": 8192, "temperature": 0},
-            },
-            timeout=300,
-        )
+        except httpx.ConnectError as error:
+            raise AIServiceUnavailableError(
+                "Não foi possível conectar ao serviço de IA."
+            ) from error
+
+        response.raise_for_status()
 
         data = response.json()
 
@@ -31,7 +38,7 @@ class AIService:
         output_tokens = data.get("eval_count")
 
         print("===== USO DE TOKENS =====")
-        print("Janela configurada: 8192")
+        print(f"Janela configurada: {context_window}")
         print(f"Tokens de entrada: {input_tokens}")
         print(f"Tokens gerados: {output_tokens}")
         print(f"Motivo do encerramento: {data.get('done_reason')}")
@@ -40,10 +47,11 @@ class AIService:
             total_tokens = input_tokens + output_tokens
 
             print(f"Entrada + geração: {total_tokens}")
-            print("Relação com a janela configurada: " f"{total_tokens / 8192:.1%}")
+            print(
+                "Relação com a janela configurada: "
+                f"{total_tokens / context_window:.1%}"
+            )
 
         print("========================")
-
-        # generated_text = data["response"]
 
         return data["response"]

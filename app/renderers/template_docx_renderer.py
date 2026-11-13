@@ -252,27 +252,6 @@ class TemplateDocxRenderer:
             fields=["id", "description"],
         )
 
-        # Apagar as linhas das tabelas que não existem no schema
-
-        table_regra = self.find_table(docx=docx, headers=["ID", "Regra"])
-        if table_regra is None:
-            raise ValueError("Tabela de regras de negócio não encontrada.")
-        self.clear_table_rows(table_regra)
-
-        table_premissas = self.find_table(
-            docx=docx, headers=["ID", "Tipo", "Descrição"]
-        )
-        if table_premissas is None:
-            raise ValueError("Tabela de premissas não encontrada.")
-        self.clear_table_rows(table_premissas)
-
-        table_escopo = self.find_table(
-            docx=docx, headers=["Incluído no escopo", "Fora do escopo"]
-        )
-        if table_escopo is None:
-            raise ValueError("Tabela escopo não encontrada.")
-        self.clear_table_rows(table_escopo)
-
         safe_name = DocxRenderer().clear_title(title)
 
         output_path = Path(f"generated_documents/{safe_name}_{document_id}.docx")

@@ -8,6 +8,8 @@ from pathlib import Path
 from app.services.ai_service import AIService
 from app.services.retrieval_service import RetrievalService
 
+# from app.services.knowledge_selection_service import KnowledgeSelectionService
+
 from app.schemas.document import DocumentRequest, DocumentResponse
 from app.schemas.requirement import GeneratedDocument, DocumentIdentification
 
@@ -30,6 +32,7 @@ class DocumentService:
         docx_renderer: DocxRenderer,
         retrieval_service: RetrievalService,
         template_docx_renderer: TemplateDocxRenderer,
+        # knowledge_selection_service: KnowledgeSelectionService,
         active_template_path: Path | None = None,
     ):
         self.repository = repository
@@ -38,6 +41,7 @@ class DocumentService:
         self.retrieval_service = retrieval_service
         self.template_docx_renderer = template_docx_renderer
         self.active_template_path = active_template_path
+        # self.knowledge_selection_service = knowledge_selection_service
 
     def get_by_id(self, document_id: uuid.UUID) -> DocumentResponse | None:
 
@@ -63,24 +67,41 @@ class DocumentService:
 
         document_id = uuid.uuid4()
 
+        # RECUPERA O CONTEXTO
         retrieved_context = self.retrieval_service.retrieve_generation_context(
             request.context
         )
         print("Contexto recuperado:", retrieved_context, flush=True)
+        # -----------------------------------------------------------------------
 
-        # print("===== CONTEXTO RECUPERADO PELO RAG =====")
-        # print(retrieved_context)
-        # print("========================================")
+        # SELEÇÃO DE CONTEXTO
+        # Seleciona o contexto entre os trechos recuperados
+        # print("==== SELEÇÃO DE CONTEXTO ====", flush=True)
+        # selected_context = self.knowledge_selection_service.select_context(
+        #     user_context=request.context,
+        #     retrieved_context=retrieved_context,
+        #     document_purpose="gerar um documento de requisitos",
+        # )
+        # print(selected_context, flush=True)
+        # print("==== FIM DA SELEÇÃO DE CONTEXTO ====", flush=True)
+        # -----------------------------------------------------------------------
 
-        # prompt = requirements_prompt(request.context)
+        # MONTA O PROMPT
+        # Cria o prompt com seleção de contexto
+        # prompt = requirements_prompt(request.context, selected_context)
+
+        # Prompt sem a seleção de contexto
         prompt = requirements_prompt(request.context, retrieved_context)
+        # -----------------------------------------------------------------------
 
+        # GERA O DOCUMENTO
         print("Chamando o Ollama...", flush=True)
         generated_response = self.ai_service.generate(prompt)
         print("O Ollama respondeu.", flush=True)
         print("===== RESPOSTA BRUTA DO LLM =====")
         print(repr(generated_response))
         print("=================================")
+
         generated_data = json.loads(generated_response)
         generated_document = GeneratedDocument(**generated_data)
 

@@ -68,7 +68,7 @@ class RetrievalService:
 
         limits_by_role = {
             KnowledgeRole.NORM: 2,
-            KnowledgeRole.EXAMPLE: 1,
+            # KnowledgeRole.EXAMPLE: 1,
             KnowledgeRole.GUIDELINE: 1,
         }
 

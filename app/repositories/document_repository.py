@@ -19,7 +19,10 @@ class DocumentRepository:
         return self.db.get(Document, document_id)
 
     def list_all(self) -> list[Document]:
-        statement = select(Document)
+        statement = select(Document).order_by(
+            Document.created_at.desc(),
+            Document.id.desc(),
+        )
         result = list(self.db.scalars(statement).all())
 
         return result

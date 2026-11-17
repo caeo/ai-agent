@@ -13,6 +13,25 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  
+  api:
+    build: .
+    ports: 
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Serviço da IA continua rodando no windows
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
 
+    volumes:
+        # Bind Mount: liga as pastas do computador às pastas do container
+      - ./uploads:/app/uploads
+      - ./generated_documents:/app/generated_documents
+
+      
 volumes:
   postgres_data:
+
+  

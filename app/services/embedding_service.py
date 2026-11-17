@@ -1,11 +1,13 @@
 import httpx
 
+from app.core.config import OLLAMA_BASE_URL
+
 
 class EmbeddingService:
     def embed(self, text: str) -> list[float]:
 
         response = httpx.post(
-            "http://localhost:11434/api/embed",
+            f"{OLLAMA_BASE_URL}/api/embed",
             json={"model": "qwen3-embedding:0.6b", "input": text},
             timeout=300,
         )

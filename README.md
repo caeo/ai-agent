@@ -41,7 +41,7 @@ mas estão desativadas no fluxo atual.
 ### 1. Clonar o repositório
 
 ```powershell
-git clone https://github.com/caeo/ai-agent.git
+git clone https://github.com/DGS-Org/Agente-Inteligente-de-Apoio-Produ-o-Documental.git
 cd ai-agent
 ```
 
@@ -158,7 +158,7 @@ A aplicação utiliza uma arquitetura em camadas:
 - **Repositories:** concentra o acesso aos dados.
 - **Schemas:** validação de entrada e saída dos dados.
 - **Models:** entidades do banco de dados.
-- **Renderers:** gera os documentos documentos.
+- **Renderers:** gera os documentos DOCX.
 - **Prompts:** instruções enviadas ao modelo de IA.
 
 ## Tecnologias

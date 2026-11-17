@@ -1,6 +1,7 @@
 import httpx
 
 from app.core.exceptions import AIServiceUnavailableError
+from app.core.config import OLLAMA_BASE_URL
 
 
 class AIService:
@@ -13,7 +14,7 @@ class AIService:
 
         try:
             response = httpx.post(
-                "http://localhost:11434/api/generate",
+                f"{OLLAMA_BASE_URL}/api/generate",
                 json={
                     "model": "qwen3:4b-instruct",
                     "prompt": prompt,

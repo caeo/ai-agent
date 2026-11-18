@@ -13,7 +13,7 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+
   api:
     build: .
     ports: 
@@ -22,16 +22,22 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      # Serviço da IA continua rodando no windows
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_BASE_URL: http://ollama:11434
 
     volumes:
         # Bind Mount: liga as pastas do computador às pastas do container
       - ./uploads:/app/uploads
       - ./generated_documents:/app/generated_documents
 
+  ollama:
+    image: ollama/ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+
       
 volumes:
   postgres_data:
+  ollama_data:
 
   

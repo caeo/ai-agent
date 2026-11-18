@@ -6,7 +6,7 @@ from app.core.config import OLLAMA_BASE_URL
 
 class AIService:
     def generate(self, prompt: str) -> str:
-        context_window = 4096
+        context_window = 8192
 
         # print("===== PROMPT ENVIADO =====")
         # print(prompt, flush=True)
@@ -16,7 +16,7 @@ class AIService:
             response = httpx.post(
                 f"{OLLAMA_BASE_URL}/api/generate",
                 json={
-                    "model": "qwen3:4b-instruct",
+                    "model": "qwen3:1.7b",
                     "prompt": prompt,
                     "stream": False,
                     "format": "json",

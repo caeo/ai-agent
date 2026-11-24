@@ -7,7 +7,8 @@ from fastapi.testclient import TestClient
 client = TestClient(app)
 
 
-def test_create_document():
+@patch("app.services.embedding_service.EmbeddingService.embed", return_value=[1.0] * 1024)
+def test_create_document(mock_embed):
 
     with patch("app.services.document_service.AIService.generate") as mock_generate:
         mock_generate.return_value = """
@@ -45,6 +46,7 @@ def test_create_document():
             },
         )
 
+        mock_embed.assert_called_once()
         data = response.json()
 
         assert response.status_code == 200
@@ -84,3 +86,4 @@ def test_create_document():
 def test_create_document_without_context():
     response = client.post("/documents", json={"title": "teste"})
     assert response.status_code == 422
+

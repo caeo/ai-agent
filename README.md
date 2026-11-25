@@ -1,4 +1,4 @@
-# DGDocs
+# AI-Agent
 
 API para geração de documentos de requisitos de software a partir de um contexto informado pelo usuário e de documentos de apoio recuperados de uma base de conhecimento.
 
@@ -14,7 +14,7 @@ A aplicação utiliza um modelo local via Ollama, retorna conteúdo estruturado 
 - Seleção de contexto e revisão por IA experimentadas, mas desativadas no fluxo principal.
 - Exportação disponível somente em DOCX.
 
-A implantação no servidor, a execução de `alembic upgrade head`, a geração de documentos e o funcionamento dos endpoints foram validados manualmente pelo responsável pelo projeto. Esta documentação corresponde ao código da branch `develop` do repositório `DGS-Org/DGDocs`.
+A implantação no servidor, a execução de `alembic upgrade head`, a geração de documentos e o funcionamento dos endpoints foram validados manualmente pelo responsável pelo projeto. Repositório do projeto: [caeo/ai-agent](https://github.com/caeo/ai-agent).
 
 ## Fluxo de geração
 
@@ -33,7 +33,6 @@ A validação com Pydantic verifica a estrutura dos dados. Os documentos gerados
 
 ### Pré-requisitos
 
-- Acesso ao repositório privado `DGS-Org/DGDocs`.
 - Git.
 - Docker e Docker Compose disponíveis no computador ou servidor.
 - Docker Desktop com containers Linux, caso utilize Windows.
@@ -45,11 +44,11 @@ API, banco e Ollama executam em containers. Python, ambiente virtual e Ollama in
 ### 1. Clonar o repositório
 
 ```bash
-git clone --branch develop https://github.com/DGS-Org/DGDocs.git
-cd DGDocs
+git clone --branch develop https://github.com/caeo/ai-agent.git
+cd ai-agent
 ```
 
-Execute os próximos comandos na raiz do projeto. O acesso ao repositório requer autenticação com uma conta autorizada.
+Execute os próximos comandos na raiz do projeto.
 
 ### 2. Configurar as variáveis de ambiente
 

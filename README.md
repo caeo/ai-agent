@@ -1,281 +1,327 @@
-## AI-AGENT
+# DGDocs
 
-## Descrição
+API para geração de documentos de requisitos de software a partir de um contexto informado pelo usuário e de documentos de apoio recuperados de uma base de conhecimento.
 
-API para geração de documentos de requisitos de software a partir de
-um contexto informado pelo usuário e de documentos de apoio recuperados
-de uma base de conhecimento.
+A aplicação utiliza um modelo local via Ollama, retorna conteúdo estruturado e gera arquivos DOCX, com possibilidade de preencher um template.
 
-A aplicação utiliza um modelo local via Ollama, organiza o resultado
-em dados estruturados e gera um arquivo DOCX, com possibilidade de
-utilizar um template.
+## Estado atual
 
-## Fluxo de geração de documentos
+- API FastAPI, PostgreSQL com pgvector e Ollama executados em containers pelo Docker Compose.
+- Modelo de geração `qwen3:1.7b`, com janela configurada de 8192 tokens.
+- Modelo de embeddings `qwen3-embedding:0.6b`.
+- Geração, persistência, listagem, consulta e download de documentos implementados.
+- Recuperação de conhecimento com embeddings e busca por similaridade.
+- Seleção de contexto e revisão por IA experimentadas, mas desativadas no fluxo principal.
+- Exportação disponível somente em DOCX.
+
+A implantação no servidor, a execução de `alembic upgrade head`, a geração de documentos e o funcionamento dos endpoints foram validados manualmente pelo responsável pelo projeto. Esta documentação corresponde ao código da branch `develop` do repositório `DGS-Org/DGDocs`.
+
+## Fluxo de geração
 
 1. O usuário envia título e contexto para a API.
-2. A aplicação gera o embedding do contexto e busca trechos semelhantes
-   na base de conhecimento, considerando os tipos de fonte configurados.
-3. O contexto do usuário e os trechos recuperados são incorporados
-   ao prompt de geração.
+2. A aplicação gera o embedding do contexto e busca trechos semelhantes na base, considerando os papéis de conhecimento configurados.
+3. O contexto do usuário e os trechos recuperados são incorporados ao prompt.
 4. O modelo local retorna o conteúdo em JSON.
 5. A aplicação interpreta o JSON e valida sua estrutura com Pydantic.
 6. O conteúdo é utilizado para gerar um DOCX, com ou sem template.
-7. Os metadados, o conteúdo estruturado e o caminho do arquivo
-   são persistidos no PostgreSQL.
+7. Os metadados, o conteúdo estruturado e o caminho do arquivo são persistidos no PostgreSQL.
 8. A API retorna o identificador, o conteúdo e a URL para download.
 
-A validação com Pydantic verifica a estrutura dos dados.
+A validação com Pydantic verifica a estrutura dos dados. Os documentos gerados são rascunhos e precisam de revisão humana: o modelo pode omitir informações ou interpretar incorretamente a demanda e as fontes.
 
-A seleção de contexto e a revisão por IA foram experimentadas,
-mas estão desativadas no fluxo atual.
-
-## Como executar
+## Como executar com Docker Compose
 
 ### Pré-requisitos
 
-- Python instalado
-- Git
-- Docker Desktop em execução
-- Ollama instalado e em execução
+- Acesso ao repositório privado `DGS-Org/DGDocs`.
+- Git.
+- Docker e Docker Compose disponíveis no computador ou servidor.
+- Docker Desktop com containers Linux, caso utilize Windows.
+- Recursos de CPU e memória suficientes para executar os modelos.
+- Acesso à internet na primeira instalação para obter imagens, dependências e modelos.
+
+API, banco e Ollama executam em containers. Python, ambiente virtual e Ollama instalados diretamente no host não são necessários para esse fluxo.
 
 ### 1. Clonar o repositório
 
-```powershell
-git clone https://github.com/DGS-Org/Agente-Inteligente-de-Apoio-Produ-o-Documental.git
-cd ai-agent
+```bash
+git clone --branch develop https://github.com/DGS-Org/DGDocs.git
+cd DGDocs
 ```
 
-### 2. Criar e ativar o ambiente virtual
+Execute os próximos comandos na raiz do projeto. O acesso ao repositório requer autenticação com uma conta autorizada.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+### 2. Configurar as variáveis de ambiente
+
+No Linux:
+
+```bash
+cp .env.example .env
 ```
 
-### 3. Instalar as dependências
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-### 4. Configurar as variáveis de ambiente
-
-Copie o arquivo de exemplo:
+No PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Edite o `.env` com as configurações locais.
+Edite o `.env`. Exemplo:
 
-- `POSTGRES_DB`: nome do banco.
-- `POSTGRES_USER`: usuário do banco.
-- `POSTGRES_PASSWORD`: senha do banco.
-- `POSTGRES_PORT`: porta disponibilizada no computador.
-- `DATABASE_URL`: conexão utilizada pela aplicação e pelas migrations.
-- `ACTIVE_TEMPLATE_PATH`: caminho do template DOCX.
+```dotenv
+POSTGRES_DB=ai_agent
+POSTGRES_USER=seu_usuario
+POSTGRES_PASSWORD=sua_senha
+POSTGRES_PORT=55432
 
-Os dados da `DATABASE_URL` devem corresponder às variáveis do PostgreSQL.
-Como a API é executada fora do Docker, utilize `127.0.0.1` e a porta
-definida em `POSTGRES_PORT`.
-
-Para utilizar um template, coloque o arquivo no caminho configurado.
-Para gerar sem template, deixe `ACTIVE_TEMPLATE_PATH` vazio.
-
-### 5. Iniciar o PostgreSQL com pgvector
-
-Na pasta que contém o arquivo do Docker Compose:
-
-```powershell
-docker compose up -d
+DATABASE_URL=postgresql+psycopg2://seu_usuario:sua_senha@127.0.0.1:55432/ai_agent
+ACTIVE_TEMPLATE_PATH=
 ```
 
-Os dados do banco são mantidos no volume `postgres_data`.
+| Variável | Finalidade |
+| --- | --- |
+| `POSTGRES_DB` | Nome do banco |
+| `POSTGRES_USER` | Usuário do PostgreSQL |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL |
+| `POSTGRES_PORT` | Porta do banco disponibilizada no host |
+| `DATABASE_URL` | Conexão utilizada caso a aplicação ou o Alembic sejam executados fora do Docker |
+| `ACTIVE_TEMPLATE_PATH` | Caminho do template DOCX; vazio para gerar sem template |
+
+O Compose monta a conexão interna da API com as variáveis do PostgreSQL e sobrescreve `DATABASE_URL` para utilizar `postgres:5432`. Também define `OLLAMA_BASE_URL=http://ollama:11434` dentro da API.
+
+Assim, não é necessário configurar o endereço do Ollama no `.env` para executar pelo Compose. Os serviços se comunicam pelos nomes `postgres` e `ollama` na rede interna.
+
+As credenciais interpoladas na URL de conexão devem ser compatíveis com esse formato; caracteres reservados de URL exigem codificação adequada. O `.env` contém configurações locais e não deve ser versionado.
+
+### 3. Preparar o template, se utilizado
+
+Para gerar com template, coloque um DOCX compatível com o renderer na pasta `uploads` e configure seu caminho relativo:
+
+```dotenv
+ACTIVE_TEMPLATE_PATH=uploads/template_requisitos_mvp.docx
+```
+
+O arquivo precisa existir nesse caminho. O upload pode salvar o arquivo com um nome diferente do original; configure o caminho do arquivo efetivamente salvo.
+
+Um caminho configurado para um arquivo inexistente não ativa automaticamente o renderer sem template. Para gerar sem template, deixe `ACTIVE_TEMPLATE_PATH` vazio. O `.env.example` atual contém um caminho de exemplo que deve ser ajustado ou esvaziado na instalação.
+
+### 4. Construir e iniciar os containers
+
+```bash
+docker compose config --quiet
+docker compose up -d --build
+docker compose ps
+```
+
+O Compose inicia três serviços:
+
+| Serviço | Função |
+| --- | --- |
+| `api` | Executa a API FastAPI na porta 8000 |
+| `postgres` | Executa PostgreSQL 16 com pgvector |
+| `ollama` | Executa os modelos de geração e embeddings |
+
+A porta 8000 do host deve estar disponível. O Compose atual não configura acesso à GPU; o desempenho depende dos recursos de CPU e memória disponíveis ao container.
+
+### 5. Baixar os modelos no container do Ollama
+
+Com o serviço `ollama` em execução:
+
+```bash
+docker compose exec ollama ollama pull qwen3:1.7b
+docker compose exec ollama ollama pull qwen3-embedding:0.6b
+```
+
+Confira os modelos disponíveis:
+
+```bash
+docker compose exec ollama ollama list
+```
+
+Os downloads ficam no volume `ollama_data` e são preservados ao recriar o container. Baixar um modelo no Ollama instalado no host não o disponibiliza automaticamente neste volume.
+
+Os nomes dos modelos estão definidos em `AIService` e `EmbeddingService`. O serviço de geração utiliza `temperature=0` e `num_ctx=8192`.
 
 ### 6. Aplicar as migrations
 
-Com o banco disponível, execute na raiz do projeto:
+Com o banco disponível e o container da API em execução:
 
-```powershell
-alembic upgrade head
+```bash
+docker compose exec api alembic upgrade head
 ```
 
-### 7. Preparar os modelos locais
+Execute esse comando na primeira instalação e quando novas migrations forem adicionadas, antes de utilizar os endpoints que acessam o banco.
 
-Com o Ollama em execução, baixe os modelos utilizados:
+A migration de criação dos chunks habilita a extensão `vector` antes de criar a coluna de embeddings. Os chunks possuem chave estrangeira para `source_documents`.
 
-```powershell
-ollama pull qwen3:4b-instruct
-ollama pull qwen3-embedding:0.6b
+O início dos containers não aplica migrations automaticamente. O Compose atual não inclui uma espera automática pela prontidão do banco; se ele ainda estiver inicializando, aguarde sua disponibilidade e repita o comando.
+
+### 7. Acessar a API
+
+No mesmo computador em que os containers executam:
+
+- Saúde: [http://localhost:8000/health](http://localhost:8000/health).
+- Swagger: [http://localhost:8000/docs](http://localhost:8000/docs).
+
+Para acessar a partir de outro computador, utilize o endereço do servidor na porta 8000, conforme as permissões de rede do ambiente. `localhost` sempre representa o computador de onde parte o acesso.
+
+No Swagger, utilize `POST /documents` para gerar e `GET /documents` para listar documentos salvos.
+
+Exemplo:
+
+```json
+{
+  "title": "Sistema de Reserva de Salas",
+  "context": "O sistema deve permitir cadastrar salas com nome e capacidade e reservar uma sala informando data, horário de início e horário de término. Uma sala não pode ter reservas com horários sobrepostos. A confirmação da reserva deve ser exibida em até 2 segundos. O banco de dados deve ser PostgreSQL."
+}
 ```
 
-- `qwen3:4b-instruct`: geração dos documentos.
-- `qwen3-embedding:0.6b`: embeddings para recuperação de contexto.
+## Comandos de uso diário
 
-A aplicação espera encontrar o Ollama em `http://localhost:11434`.
-O tempo de geração depende dos recursos disponíveis no computador.
+| Ação | Comando |
+| --- | --- |
+| Iniciar ou atualizar os containers conforme o Compose | `docker compose up -d` |
+| Reconstruir e atualizar a API após alterar o código | `docker compose up -d --build api` |
+| Verificar os containers do projeto | `docker compose ps` |
+| Consultar os últimos logs da API | `docker compose logs --tail 80 api` |
+| Acompanhar os logs da API | `docker compose logs -f api` |
+| Parar os containers | `docker compose stop` |
+| Iniciar containers já criados e parados | `docker compose start` |
+| Aplicar migrations | `docker compose exec api alembic upgrade head` |
 
-### 8. Iniciar a API
+O código é copiado para a imagem durante a construção. A configuração atual não utiliza recarga automática: alterações no código exigem reconstruir a imagem e atualizar o container. Após mudar variáveis de ambiente, utilize `docker compose up -d api` para recriar o container quando necessário.
 
-Execute na raiz do projeto, com o ambiente virtual ativado:
+## Armazenamento e portas
 
-```powershell
-python -m uvicorn app.main:app --reload
-```
+| Recurso | Armazenamento |
+| --- | --- |
+| PostgreSQL | Volume nomeado `postgres_data` |
+| Modelos do Ollama | Volume nomeado `ollama_data`, montado em `/root/.ollama` |
+| Arquivos enviados e templates | Pasta local `uploads`, montada em `/app/uploads` |
+| DOCX gerados | Pasta local `generated_documents`, montada em `/app/generated_documents` |
 
-### 9. Acessar a documentação interativa
+As pastas de arquivos são compartilhadas por bind mounts. Os arquivos e o volume do banco são preservados ao recriar o container. A remoção explícita dos volumes, como em `docker compose down -v`, apaga os volumes do banco e dos modelos do Ollama.
 
-Abra no navegador:
+| Conexão | Endereço |
+| --- | --- |
+| Navegador no host → API | `localhost:8000` |
+| Navegador em outra máquina → API | Endereço do servidor, porta 8000 |
+| Ferramenta no host → banco | `127.0.0.1`, na porta definida em `POSTGRES_PORT` |
+| API no container → banco | `postgres:5432` |
+| API no container → Ollama | `ollama:11434` |
 
-http://localhost:8000/docs
+A porta do Ollama não é publicada no host pelo Compose atual. Os comandos de administração dos modelos são executados com `docker compose exec ollama ollama ...`.
 
-Use `POST /documents` para gerar um documento e `GET /documents`
-para consultar a listagem dos documentos salvos.
+## Endpoints
 
-## Funcionalidades atuais
+| Método | Endpoint | Função |
+| --- | --- | --- |
+| GET | `/health` | Verifica se a API responde |
+| POST | `/documents` | Gera e persiste um documento |
+| GET | `/documents` | Lista documentos, dos mais recentes para os mais antigos |
+| GET | `/documents/{id}` | Consulta um documento pelo UUID |
+| GET | `/documents/{id}/download` | Faz o download do DOCX |
+| POST | `/source-documents` | Envia um DOCX como fonte de conhecimento ou template |
 
-- Geração de objetivo, requisitos funcionais, requisitos não funcionais
-  e restrições técnicas.
-- Recuperação de trechos da base de conhecimento por similaridade.
-- Cadastro de fontes com classificação e descrição de aplicabilidade.
-- Geração de DOCX com ou sem template.
-- Configuração do caminho do template por variável de ambiente.
-- Persistência dos documentos e de seu conteúdo estruturado no PostgreSQL.
-- Listagem resumida dos documentos, com os mais recentes primeiro.
-- Consulta de documento por identificador.
-- Download do arquivo DOCX.
+### Upload de fontes
 
-Os documentos gerados são rascunhos e precisam de revisão humana,
-pois o modelo pode omitir informações ou interpretar incorretamente
-o contexto e as fontes recuperadas.
+`POST /source-documents` recebe `multipart/form-data`. No Swagger, utilize **Try it out** para selecionar o arquivo e preencher os campos.
 
-## Arquitetura
+| Campo | Descrição |
+| --- | --- |
+| `file` | DOCX obrigatório, não vazio e com texto extraível |
+| `source_type` | Tipo da fonte; o padrão é `knowledge` |
+| `knowledge_role` | Papel do conhecimento: `norm`, `guideline` ou `example` |
+| `applicability` | Descrição de quando o conhecimento se aplica, com até 1000 caracteres |
+
+Para fontes de conhecimento, `knowledge_role` e `applicability` são obrigatórios. Para templates, não envie esses metadados.
+
+O upload de um template não o torna automaticamente ativo. O arquivo utilizado na geração é definido por `ACTIVE_TEMPLATE_PATH`.
+
+Os papéis de conhecimento são:
+
+- `norm`: exigências aplicáveis à demanda.
+- `guideline`: orientações de redação e organização.
+- `example`: exemplos de referência.
+
+Atualmente, a recuperação para geração utiliza `norm` e `guideline`. Fontes `example` podem ser cadastradas, mas não participam desse fluxo.
+
+## Arquitetura e estrutura
 
 A aplicação utiliza uma arquitetura em camadas:
 
-- **Routes:** recebe requisições HTTP e retorna respostas.
-- **Services:** coordena os serviços da aplicação.
-- **Repositories:** concentra o acesso aos dados.
-- **Schemas:** validação de entrada e saída dos dados.
-- **Models:** entidades do banco de dados.
-- **Renderers:** gera os documentos DOCX.
-- **Prompts:** instruções enviadas ao modelo de IA.
-
-## Tecnologias
-
-- Python 3.12
-- FastAPI
-- Pydantic
-- SQLAlchemy
-- PostgreSQL
-- Alembic
-- Docker
-- Ollama
-- Qwen
-- python-docx
-- Pytest
-
-## Estrutura do projeto
-
 | Caminho | Responsabilidade |
-| ------- | ---------------- |
-| `alembic/` | Migrations do banco de dados |
-| `app/api/routes/` | Endpoints da API |
+| --- | --- |
+| `app/api/routes/` | Receber requisições HTTP e retornar respostas |
 | `app/core/` | Configurações, enums e exceções |
 | `app/db/` | Conexão, base e modelos do banco |
 | `app/prompts/` | Instruções enviadas ao modelo de IA |
 | `app/renderers/` | Geração e preenchimento de arquivos DOCX |
 | `app/repositories/` | Acesso aos dados persistidos |
 | `app/schemas/` | Estruturas de entrada e saída com Pydantic |
-| `app/services/` | Serviços da aplicação |
+| `app/services/` | Serviços e coordenação do fluxo da aplicação |
 | `app/main.py` | Inicialização da API |
+| `alembic/` | Migrations do banco |
 | `experiments/` | Experimentos fora do fluxo principal |
-| `generated_documents/` | Documentos gerados |
 | `tests/` | Testes automatizados |
-| `uploads/` | Arquivos enviados à aplicação |
+| `uploads/` | Arquivos enviados e templates |
+| `generated_documents/` | Documentos gerados |
+| `Dockerfile` | Construção da imagem da API |
+| `.dockerignore` | Arquivos excluídos do contexto de construção |
+| `docker-compose.yml` | Serviços, conexões e montagens dos containers |
 | `.env.example` | Exemplo das variáveis de ambiente |
-| `docker-compose.yml` | Configuração do container PostgreSQL com pgvector |
 | `alembic.ini` | Configuração do Alembic |
 | `requirements.txt` | Dependências Python |
 
-## Endpoints
+## Tecnologias
 
+- Python 3.14 na imagem da API.
+- FastAPI e Uvicorn.
+- Pydantic.
+- SQLAlchemy e Alembic.
+- PostgreSQL 16 com pgvector.
+- Docker e Docker Compose.
+- Ollama e modelos Qwen.
+- HTTPX.
+- python-docx.
+- Pytest para os testes iniciais existentes.
 
-
-| Método | Endpoint | Função |
-| ------ | -------- | ------ |
-| GET | /health | Verifica o estado da API |
-| POST | /documents | Gera e persiste um documento |
-| GET | /documents | Lista documentos, dos mais recentes para os mais antigos |
-| GET | /documents/{id} | Consulta um documento pelo UUID |
-| GET | /documents/{id}/download | Faz o download do DOCX |
-| POST | /source-documents | Envia um DOCX como fonte de conhecimento ou template |
-
-### Upload de fontes
-
-O endpoint POST /source-documents recebe multipart/form-data.
-No Swagger, utilize “Try it out” para selecionar o arquivo e preencher
-os campos.
-
-| Campo | Descrição |
-| ----- | --------- |
-| file | Arquivo DOCX obrigatório, não vazio e com texto extraível |
-| source_type | Tipo da fonte; o padrão é knowledge |
-| knowledge_role | Papel do conhecimento: norm, guideline ou example |
-| applicability | Descrição de quando o conhecimento se aplica, com até 1000 caracteres |
-
-Para fontes do tipo knowledge, knowledge_role e applicability
-são obrigatórios.
-
-Para templates, não envie knowledge_role nem applicability.
-O upload de um template não o torna automaticamente ativo:
-o arquivo utilizado na geração é definido por ACTIVE_TEMPLATE_PATH.
-
-Os papéis de conhecimento são:
-
-- norm: exigências aplicáveis à demanda.
-- guideline: orientações de redação e organização.
-- example: exemplos de referência.
-
-Atualmente, a recuperação para geração utiliza norm e guideline.
-Fontes example podem ser cadastradas, mas não participam desse fluxo.
+O pgvector permite armazenar embeddings e realizar buscas por similaridade no mesmo PostgreSQL utilizado pela aplicação.
 
 ## Roadmap
 
 ### Implementado
 
-- [x] API com FastAPI
-- [x] Integração com modelo local via Ollama
-- [x] Geração de conteúdo em JSON e validação estrutural com Pydantic
-- [x] Geração de documentos de requisitos em DOCX
-- [x] Preenchimento de template DOCX
-- [x] Configuração do caminho do template por variável de ambiente
-- [x] Persistência com PostgreSQL
-- [x] Migrations com Alembic
-- [x] Cadastro de documentos como fontes de conhecimento
-- [x] Metadados de classificação e aplicabilidade das fontes
-- [x] Recuperação de contexto com embeddings e pgvector
-- [x] Uso de fontes norm e guideline na recuperação para geração
-- [x] Consulta de documentos por UUID
-- [x] Listagem resumida dos documentos, dos mais recentes aos mais antigos
-- [x] Download de documentos DOCX
-- [x] Testes iniciais da API
+- [x] API com FastAPI.
+- [x] Integração com modelo local via Ollama.
+- [x] Geração em JSON e validação estrutural com Pydantic.
+- [x] Geração de requisitos em DOCX, com ou sem template.
+- [x] Configuração do caminho do template por variável de ambiente.
+- [x] Persistência com PostgreSQL e migrations com Alembic.
+- [x] Cadastro de fontes com classificação e aplicabilidade.
+- [x] Recuperação de contexto com embeddings e pgvector.
+- [x] Uso de fontes `norm` e `guideline` na geração.
+- [x] Listagem, consulta por UUID e download dos documentos.
+- [x] Testes iniciais da API.
+- [x] API, banco e Ollama em containers pelo Docker Compose.
+- [x] Implantação e validação manual dos endpoints no servidor.
+- [x] Persistência dos modelos no volume `ollama_data`.
+- [x] Endereço do Ollama configurável por variável de ambiente.
+- [x] Montagem das pastas de uploads e documentos gerados.
 
 ### Experimentos desativados
 
-- Seleção de contexto por IA antes da geração
-- Revisão do documento por IA após a geração
-- Uso de fontes example na recuperação para geração
+- Seleção de contexto por IA antes da geração.
+- Revisão do documento por IA após a geração.
+- Uso de fontes `example` na recuperação para geração.
 
-Esses recursos precisam de avaliação antes de serem incorporados
-ao fluxo principal.
+Esses recursos precisam de avaliação antes de serem incorporados ao fluxo principal.
 
-### Após a primeira entrega
+### Próximas etapas
 
-- [ ] Expandir os testes automatizados
-- [ ] Ampliar o tratamento de erros
-- [ ] Melhorar a qualidade e a completude dos documentos gerados
-- [ ] Desenvolver a interface de utilização
-- [ ] Avaliar suporte a novos tipos de documentos
-- [ ] Avaliar geração de PDF
-- [ ] Avaliar uma biblioteca de prompts
+- [ ] Expandir os testes automatizados após a primeira entrega do MVP.
+- [ ] Ampliar o tratamento de erros.
+- [ ] Melhorar a qualidade e a completude dos documentos gerados.
+- [ ] Desenvolver a interface de utilização.
+- [ ] Avaliar suporte a novos tipos de documentos.
+- [ ] Avaliar geração de PDF.
+- [ ] Avaliar uma biblioteca de prompts.
